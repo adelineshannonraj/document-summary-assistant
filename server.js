@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const sharp = require('sharp');
+require('pdf-parse/worker');
 const pdfParse = require('pdf-parse');
 const { GoogleGenAI } = require('@google/genai');
 const ai = new GoogleGenAI({
