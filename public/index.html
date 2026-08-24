@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Document Summary Assistant</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="scanline" id="scanline"></div>
+
+  <header class="topbar">
+    <div class="mark">DSA</div>
+    <div class="topbar-text">
+      <h1>Document Summary Assistant</h1>
+      <p class="eyebrow">Upload &middot; Scan &middot; Summarize</p>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="panel" id="upload-panel">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".pdf,image/png,image/jpeg,image/webp" hidden />
+        <div class="dropzone-inner">
+          <div class="doc-icon" aria-hidden="true">
+            <div class="doc-icon-fold"></div>
+          </div>
+          <p class="drop-title">Drop a document here</p>
+          <p class="drop-sub">PDF or scanned image (PNG, JPG, WEBP) &middot; up to 15MB</p>
+          <button class="btn-browse" id="browse-btn" type="button">Choose a file</button>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label class="length-label" for="length-select">Summary length</label>
+        <div class="length-select" id="length-select">
+          <button class="length-opt" data-length="short" type="button">Short</button>
+          <button class="length-opt active" data-length="medium" type="button">Medium</button>
+          <button class="length-opt" data-length="long" type="button">Long</button>
+        </div>
+      </div>
+
+      <p class="filename" id="filename"></p>
+      <button class="btn-process" id="process-btn" type="button" disabled>Extract &amp; Summarize</button>
+    </section>
+
+    <section class="panel result-panel" id="result-panel" hidden>
+      <div class="result-header">
+        <h2>Summary</h2>
+        <span class="badge" id="length-badge"></span>
+      </div>
+      <p class="stat-line" id="stat-line"></p>
+
+      <div class="summary-box">
+        <p id="summary-text"></p>
+      </div>
+
+      <h3 class="key-points-title">Key points</h3>
+      <ul class="key-points" id="key-points"></ul>
+
+      <button class="btn-reset" id="reset-btn" type="button">Process another document</button>
+    </section>
+
+    <section class="panel status-panel" id="status-panel" hidden>
+      <div class="loader" aria-hidden="true"></div>
+      <p id="status-text">Reading document&hellip;</p>
+    </section>
+
+    <section class="panel error-panel" id="error-panel" hidden>
+      <p class="error-title">Something went wrong</p>
+      <p id="error-text"></p>
+      <button class="btn-reset" id="error-reset-btn" type="button">Try again</button>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Text extraction (PDF/OCR) runs locally on the server &middot; summaries and image understanding use Gemini AI when a GEMINI_API_KEY is configured</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
