@@ -572,5 +572,10 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Unexpected server error.' });
 });
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Document Summary Assistant running on port ${PORT}`);
+  });
+}
 
-app.listen(PORT, () => console.log(`Document Summary Assistant running on port ${PORT}`));
+module.exports = app;
