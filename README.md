@@ -20,6 +20,11 @@ AI-generated summary
 
 ![Output UI](screenshots/Output_Screenshot.png)
 
+
+### Live Deployment
+The application is deployed on Vercel.
+![Live Deployment](screenshots\DeployedUI_preview.png)
+
 Features
 
 - Drag-and-drop and file picker upload
