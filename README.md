@@ -23,7 +23,7 @@ AI-generated summary
 
 ### Live Deployment
 The application is deployed on Vercel.
-![Live Deployment](screenshots\DeployedUI_preview.png)
+![Live Deployment](screenshots/DeployedUI_preview.png)
 
 Features
 
