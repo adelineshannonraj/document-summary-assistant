@@ -6,9 +6,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const sharp = require('sharp');
-require('pdf-parse/worker');
-const pdfParse = require('pdf-parse');
 const { GoogleGenAI } = require('@google/genai');
+const { PDFParse } = require('pdf-parse');
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY
 });
@@ -16,31 +15,6 @@ console.log(
     'Gemini API key loaded:',
     !!process.env.GEMINI_API_KEY
 );
-let pdfjsLib = null;
-// Try multiple import paths for pdfjs-dist across versions
-(function loadPdfJs() {
-  const tryPaths = [
-    'pdfjs-dist/legacy/build/pdf',
-    'pdfjs-dist/build/pdf',
-    'pdfjs-dist',
-    'pdfjs-dist/es5/build/pdf',
-    'pdfjs-dist/legacy/build/pdf.js'
-  ];
-  for (const p of tryPaths) {
-    try {
-      const mod = require(p);
-      // normalize default export if necessary
-      pdfjsLib = (mod && mod.default) ? mod.default : mod;
-      if (pdfjsLib && typeof pdfjsLib.getDocument === 'function') {
-        console.log('Loaded pdfjs-dist from', p);
-        return;
-      }
-    } catch (e) {
-      // continue trying
-    }
-  }
-  console.warn('pdfjs-dist not found or incompatible; PDF fallback disabled. To enable, run: npm install pdfjs-dist');
-})();
 const { createWorker } = require('tesseract.js');
 
 const app = express();
@@ -75,58 +49,50 @@ const upload = multer({
 // ---------- Text extraction helpers ----------
 
 async function extractFromPDF(filePath) {
-  const buffer = fs.readFileSync(filePath);
+  let parser;
 
-  // Try pdf-parse first (fast/simple) if it's a callable function
   try {
-    let parser = pdfParse;
-    if (typeof parser !== 'function' && parser && typeof parser.default === 'function') parser = parser.default;
-    if (typeof parser === 'function') {
-      const result = await parser(buffer).catch(err => {
-        console.warn('pdf-parse threw:', err && err.message ? err.message : err);
-        return null;
-      });
-      if (result && result.text && result.text.trim().length > 0) {
-        return result.text.trim();
-      }
-      // if pdf-parse returned no text, fall through to pdfjs fallback
-    } else {
-      console.warn('pdf-parse not callable; skipping to pdfjs fallback.');
-    }
-  } catch (err) {
-    console.warn('pdf-parse failed unexpectedly:', err && err.message ? err.message : err);
-  }
+    const buffer = fs.readFileSync(filePath);
 
-  // Fallback: use pdfjs-dist to extract text (more robust in some cases)
-  try {
-    if (!pdfjsLib) {
-      console.warn("pdfjs-dist is not installed or wasn't resolved; skipping pdfjs fallback. To enable, run: npm install pdfjs-dist");
-      throw new Error('PDF parsing fallback not available');
+    parser = new PDFParse({
+      data: new Uint8Array(buffer)
+    });
+
+    const result = await parser.getText();
+
+    const text = result.text ? result.text.trim() : '';
+
+    if (!text) {
+      throw new Error(
+        'No readable text found in this PDF. It may be a scanned PDF.'
+      );
     }
 
-    // pdfjs expects Uint8Array data rather than Node Buffer in some builds
-    const uint8 = new Uint8Array(buffer);
-    const loadingTask = pdfjsLib.getDocument({ data: uint8 });
-    const pdfDoc = await loadingTask.promise;
-    const numPages = pdfDoc.numPages || 0;
-    let fullText = '';
-    for (let i = 1; i <= numPages; i++) {
-      const page = await pdfDoc.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map(item => (item.str || '')).join(' ');
-      fullText += (pageText + '\n\n');
-    }
-    if (fullText.trim().length === 0) {
-      console.error('pdfjs-dist extracted empty text for', filePath);
-      throw new Error('No text found in PDF pages');
-    }
-    return fullText.trim();
+    return text;
+
   } catch (err) {
-    console.error('pdfjs-dist fallback failed:', err && (err.stack || err.message) ? (err.stack || err.message) : err);
+    console.error(
+      'PDF extraction error:',
+      err && (err.stack || err.message)
+        ? (err.stack || err.message)
+        : err
+    );
+
     throw new Error('Failed to extract text from PDF.');
+
+  } finally {
+    if (parser) {
+      try {
+        await parser.destroy();
+      } catch (destroyError) {
+        console.warn(
+          'Failed to destroy PDF parser:',
+          destroyError.message
+        );
+      }
+    }
   }
 }
-
 
 async function preprocessImage(filePath) {
   const out = filePath + '.proc.png';
